@@ -41,7 +41,9 @@ const MessageBubble = memo(({ msg, isMe, chosenColor }) => {
 
   return (
     <div
-      className={`d-flex mb-3 ${isMe ? "justify-content-end" : "justify-content-start"}`}
+      className={`d-flex mb-3 ${
+        isMe ? "justify-content-end" : "justify-content-start"
+      }`}
     >
       <div
         style={{
@@ -107,37 +109,36 @@ const Chat = () => {
   const chatEndRef = useRef(null);
   const [searchTerm, setSearchTerm] = useState("");
 
-useEffect(() => {
-  const apiBase =
-    import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api";
-  const socketUrl = apiBase.replace(/\/api\/?$/, "") || "http://localhost:3000";
-  const token = localStorage.getItem("token");
+  useEffect(() => {
+    const apiBase =
+      import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api";
+    const socketUrl =
+      apiBase.replace(/\/api\/?$/, "") || "http://localhost:3000";
+    const token = localStorage.getItem("token");
 
-  if (!token) {
-    console.warn("⚠️ No token found for Socket.IO connection.");
-    return;
-  }
+    if (!token) {
+      console.warn("⚠️ No token found for Socket.IO connection.");
+      return;
+    }
 
-  const s = io(socketUrl, { auth: { token } });
-  setSocket(s);
+    const s = io(socketUrl, { auth: { token } });
+    setSocket(s);
 
-  s.on("receive_message", (chat) => {
-    // ✅ FIX: ignore duplicates from self
-    if (String(chat.sender) === String(currentUserId)) return;
-    setMessages((prev) => [...prev, chat]);
-  });
+    s.on("receive_message", (chat) => {
+      // ✅ FIX: ignore duplicates from self
+      if (String(chat.sender) === String(currentUserId)) return;
+      setMessages((prev) => [...prev, chat]);
+    });
 
-  s.on("connect_error", (err) => {
-    console.error("Socket connect_error:", err);
-  });
+    s.on("connect_error", (err) => {
+      console.error("Socket connect_error:", err);
+    });
 
-  return () => {
-    s.disconnect();
-    setSocket(null);
-  };
-}, [currentUserId]);
-
-
+    return () => {
+      s.disconnect();
+      setSocket(null);
+    };
+  }, [currentUserId]);
 
   useEffect(() => {
     const fetchLists = async () => {
@@ -180,7 +181,9 @@ useEffect(() => {
       setMessages([]);
       try {
         const type = activeUser.type === "caretaker" ? "caretaker" : "user";
-        const res = await API.get(`/chat/messages/${activeUser._id}?type=${type}`);
+        const res = await API.get(
+          `/chat/messages/${activeUser._id}?type=${type}`
+        );
         if (!cancelled) setMessages(res.data || []);
       } catch (err) {
         console.error("Failed to load messages:", err);
@@ -198,9 +201,10 @@ useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, aiMessages]);
 
-  const handleSendToSocket = (text) => {
+  const handleSendToSocket = async (text) => {
     if (!socket || !activeUser) return;
     const payload = {
+      sender: currentUserId,
       receiver: activeUser._id,
       receiverType: activeUser.type,
       message: text,
@@ -214,6 +218,18 @@ useEffect(() => {
     };
     setMessages((prev) => [...prev, optimistic]);
     socket.emit("send_message", payload);
+    try {
+      await API.post("/chat/updateprofile", {
+        receiverId: activeUser._id,
+        content: text,
+      });
+    } catch (err) {
+      console.error("Failed to send message:", err);
+    } finally {
+      try {
+        window.dispatchEvent(new Event("profileUpdated"));
+      } catch (e) {}
+    }
   };
 
   const handleAiSend = async (text) => {
@@ -348,7 +364,6 @@ useEffect(() => {
               />
             </Form.Group>
 
-
             <h6 style={{ color: chosenColor }}>Users</h6>
             <ListGroup variant="flush">
               {filteredUsers
@@ -362,12 +377,10 @@ useEffect(() => {
                       if (isMobile) setShowSidebar(false);
                     }}
                     active={
-                      activeUser?._id === u._id &&
-                      activeUser?.type === "user"
+                      activeUser?._id === u._id && activeUser?.type === "user"
                     }
                     style={sidebarItemStyle(
-                      activeUser?._id === u._id &&
-                        activeUser?.type === "user"
+                      activeUser?._id === u._id && activeUser?.type === "user"
                     )}
                     className="d-flex align-items-center"
                   >
@@ -384,11 +397,12 @@ useEffect(() => {
                       <div>{u.name}</div>
                       <div
                         className="small"
-                        style={{ color: isDark ? "rgba(255,255,255,0.6)" : "#6c757d" }}
+                        style={{
+                          color: isDark ? "rgba(255,255,255,0.6)" : "#6c757d",
+                        }}
                       >
                         {u.email}
                       </div>
-
                     </div>
                   </ListGroup.Item>
                 ))}
@@ -429,11 +443,13 @@ useEffect(() => {
                       <div>
                         <div>{c.name}</div>
                         <div
-                        className="small"
-                        style={{ color: isDark ? "rgba(255,255,255,0.6)" : "#6c757d" }}
-                      >
-                        {c.role || "Caretaker"}
-                      </div>
+                          className="small"
+                          style={{
+                            color: isDark ? "rgba(255,255,255,0.6)" : "#6c757d",
+                          }}
+                        >
+                          {c.role || "Caretaker"}
+                        </div>
                       </div>
                     </div>
                     <Badge
@@ -477,7 +493,9 @@ useEffect(() => {
                       <div>MindMate AI</div>
                       <div
                         className="small"
-                        style={{ color: isDark ? "rgba(255,255,255,0.6)" : "#6c757d" }}
+                        style={{
+                          color: isDark ? "rgba(255,255,255,0.6)" : "#6c757d",
+                        }}
                       >
                         Virtual assistant
                       </div>
@@ -540,7 +558,8 @@ useEffect(() => {
 
               <h4 style={{ color: chosenColor, marginBottom: 8 }}>MindMate</h4>
               <div style={{ fontSize: "100%" }}>
-                Welcome to chat!<br />
+                Welcome to chat!
+                <br />
                 Select a conversation to start chatting.
               </div>
             </div>
@@ -594,32 +613,35 @@ useEffect(() => {
                   width: "100%",
                 }}
               >
-                {activeUser.type === "ai"
-                  ? aiMessages.map((m, idx) => (
-                      <MessageBubble
-                        key={`ai-${idx}-${m.createdAt}`}
-                        msg={m}
-                        isMe={m.role === "user"}
-                        chosenColor={chosenColor}
-                      />
-                    ))
-                  : isLoadingMessages ? (
-                      <div className="d-flex justify-content-center align-items-center h-100">
-                        <Spinner animation="border" style={{ color: chosenColor }} />
-                      </div>
-                    ) : (
-                      messages.map((m, idx) => (
-                        <MessageBubble
-                          key={m._id || `msg-${idx}-${m.createdAt}`}
-                          msg={m}
-                          isMe={
-                            String(m.sender?.id || m.sender) ===
-                            String(currentUserId)
-                          }
-                          chosenColor={chosenColor}
-                        />
-                      ))
-                    )}
+                {activeUser.type === "ai" ? (
+                  aiMessages.map((m, idx) => (
+                    <MessageBubble
+                      key={`ai-${idx}-${m.createdAt}`}
+                      msg={m}
+                      isMe={m.role === "user"}
+                      chosenColor={chosenColor}
+                    />
+                  ))
+                ) : isLoadingMessages ? (
+                  <div className="d-flex justify-content-center align-items-center h-100">
+                    <Spinner
+                      animation="border"
+                      style={{ color: chosenColor }}
+                    />
+                  </div>
+                ) : (
+                  messages.map((m, idx) => (
+                    <MessageBubble
+                      key={m._id || `msg-${idx}-${m.createdAt}`}
+                      msg={m}
+                      isMe={
+                        String(m.sender?.id || m.sender) ===
+                        String(currentUserId)
+                      }
+                      chosenColor={chosenColor}
+                    />
+                  ))
+                )}
                 <div ref={chatEndRef} />
               </div>
 

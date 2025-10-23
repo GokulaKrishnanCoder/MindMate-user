@@ -32,13 +32,37 @@ export const getMessages = async (req, res) => {
 // ✅ Send a new message
 export const sendMessage = async (req, res) => {
   try {
+    const senderId = req.user._id;
     const { receiverId, content } = req.body;
     const message = await Chats.create({
-      sender: req.user.id,
+      sender: senderId,
       receiver: receiverId,
       content,
     });
-    res.status(201).json(message);
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+// ✅ Update user profile (e.g., increment points, add activity)
+export const updateProfile = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const user = await User.findByIdAndUpdate(
+      userId,
+      {
+        $inc: { "profile.points": 1 },
+        $push: {
+          "profile.activities": {
+            type: "message_sent",
+            title: "Message sent",
+            time: new Date(),
+          },
+        },
+      },
+      { new: true }
+    );
+    res.json(user);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

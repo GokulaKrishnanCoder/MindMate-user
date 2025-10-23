@@ -131,3 +131,24 @@ export const putCaretakerSettings = async (req, res) => {
     res.status(500).json({ message: "Error updating settings" });
   }
 };
+export const updateProfile = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const user = await User.findByIdAndUpdate(
+      userId,
+      {
+        $push: {
+          "profile.activities": {
+            type: "message_sent",
+            title: "Message sent",
+            time: new Date(),
+          },
+        },
+      },
+      { new: true }
+    );
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

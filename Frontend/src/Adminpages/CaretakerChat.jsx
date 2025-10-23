@@ -188,7 +188,7 @@ const CaretakerChat = () => {
   }, [messages, aiMessages]);
 
   // ✅ Send to socket
-  const handleSendToSocket = (text) => {
+  const handleSendToSocket = async(text) => {
     if (!socket || !activeUser) return;
     const payload = {
       receiver: activeUser._id,
@@ -205,6 +205,11 @@ const CaretakerChat = () => {
     };
     setMessages((prev) => [...prev, optimistic]);
     socket.emit("send_message", payload);
+    try {
+      await API.post("/chat/updateProfile");
+    } catch (err) {
+      console.error("Profile update error:", err);
+    } 
   };
 
   // ✅ AI Chat
