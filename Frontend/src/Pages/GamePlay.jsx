@@ -20,7 +20,9 @@ const GamePlay = () => {
   const { gameInfo } = location.state || {};
   const gameId = params.gameId || gameInfo?.id || gameInfo?._id;
 
-  const startRef = useRef(gameInfo?.startTime ? new Date(gameInfo.startTime).getTime() : Date.now());
+  const startRef = useRef(
+    gameInfo?.startTime ? new Date(gameInfo.startTime).getTime() : Date.now()
+  );
   const didSendRef = useRef(false);
 
   // ...existing code...
@@ -46,10 +48,14 @@ const GamePlay = () => {
         }
       }
     } catch (err) {
-      console.error("[GamePlay] Failed to record game play:", err, err?.response?.data);
+      console.error(
+        "[GamePlay] Failed to record game play:",
+        err,
+        err?.response?.data
+      );
     }
   };
-// ...existing code...
+  // ...existing code...
   const handleGoBack = async () => {
     const ms = Date.now() - startRef.current;
     const minutes = Math.max(1, Math.ceil(ms / 60000));
@@ -65,7 +71,9 @@ const GamePlay = () => {
       // try navigator.sendBeacon with token fallback; API.post will handle normal case
       try {
         const token = localStorage.getItem("token");
-        const url = `${import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api"}/games/${gameId}/play`;
+        const url = `${
+          import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api"
+        }/games/${gameId}/play`;
         const payload = JSON.stringify({
           minutes,
           difficulty: parseDifficulty(gameInfo?.difficulty),
@@ -73,7 +81,10 @@ const GamePlay = () => {
           _token: token || null,
         });
         if (navigator.sendBeacon) {
-          navigator.sendBeacon(url, new Blob([payload], { type: "application/json" }));
+          navigator.sendBeacon(
+            url,
+            new Blob([payload], { type: "application/json" })
+          );
         }
       } catch (e) {
         // ignore
@@ -101,9 +112,12 @@ const GamePlay = () => {
       </div>
     );
   }
-
   return (
-    <div className="position-fixed top-0 start-0 w-100 h-100 bg-dark" style={{ zIndex: 9999 }}>
+    <div
+      className="position-fixed top-0 start-0 w-100 h-100 bg-dark"
+      style={{ zIndex: 9999 }}
+    >
+      {/* Go Back Button */}
       <button
         className="btn btn-light position-absolute m-3"
         style={{ zIndex: 10000 }}
@@ -111,6 +125,8 @@ const GamePlay = () => {
       >
         <ArrowLeft className="me-2" /> Go Back
       </button>
+
+      {/* Game Iframe */}
       <iframe
         src={gameInfo.link}
         title={gameInfo.title}
@@ -118,11 +134,40 @@ const GamePlay = () => {
         scrolling="no"
         width="100%"
         height="100%"
-        style={{ border: "none", position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
+        style={{
+          border: "none",
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+        }}
         allowFullScreen
       ></iframe>
+
+      {/* Dark Blue Top Bar with Game Title */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "40px",
+          backgroundColor: "#0b0c2a",
+          color: "white",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: "1.1rem",
+          fontWeight: "600",
+          letterSpacing: "0.5px",
+          zIndex: 9999,
+          textTransform: "uppercase",
+        }}
+      >
+        {gameInfo.title || gameInfo.name || "Untitled Game"}
+      </div>
     </div>
   );
 };
-
 export default GamePlay;

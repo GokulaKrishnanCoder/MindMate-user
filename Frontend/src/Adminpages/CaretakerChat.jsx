@@ -40,7 +40,9 @@ const MessageBubble = memo(({ msg, isMe, chosenColor }) => {
 
   return (
     <div
-      className={`d-flex mb-3 ${isMe ? "justify-content-end" : "justify-content-start"}`}
+      className={`d-flex mb-3 ${
+        isMe ? "justify-content-end" : "justify-content-start"
+      }`}
     >
       <div
         style={{
@@ -53,7 +55,9 @@ const MessageBubble = memo(({ msg, isMe, chosenColor }) => {
           boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
         }}
       >
-        <div style={{ whiteSpace: "pre-wrap" }}>{msg.message || msg.content || ""}</div>
+        <div style={{ whiteSpace: "pre-wrap" }}>
+          {msg.message || msg.content || ""}
+        </div>
         <div
           className="text-end small mt-1"
           style={{
@@ -107,7 +111,8 @@ const CaretakerChat = () => {
   useEffect(() => {
     const apiBase =
       import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api";
-    const socketUrl = apiBase.replace(/\/api\/?$/, "") || "http://localhost:3000";
+    const socketUrl =
+      apiBase.replace(/\/api\/?$/, "") || "http://localhost:3000";
     const token = localStorage.getItem("token");
 
     if (!token) {
@@ -119,6 +124,8 @@ const CaretakerChat = () => {
     setSocket(s);
 
     s.on("receive_message", (chat) => {
+      // Ignore duplicates from self
+      if (String(chat.sender) === String(currentCaretakerId)) return;
       setMessages((prev) => [...prev, chat]);
     });
 
@@ -157,7 +164,11 @@ const CaretakerChat = () => {
       setIsLoadingMessages(true);
       setMessages([]);
       try {
-        const res = await API.get(`/chat/messages/${activeUser._id}?type=user`);
+        const type = activeUser.type === "user" ? "user" : "caretaker";
+        const res = await API.get(
+          `/chat/messages/${activeUser._id}?type=${type}`
+        );
+
         if (!cancelled) setMessages(res.data || []);
       } catch (err) {
         console.error("Failed to load messages:", err);
@@ -181,9 +192,10 @@ const CaretakerChat = () => {
     if (!socket || !activeUser) return;
     const payload = {
       receiver: activeUser._id,
-      receiverType: "user",
+      receiverType: activeUser.type,
       message: text,
     };
+
     const optimistic = {
       _id: `local-${Date.now()}`,
       sender: currentCaretakerId,
@@ -273,7 +285,10 @@ const CaretakerChat = () => {
         flexDirection: "column",
       }}
     >
-      <Row className="g-0 flex-grow-1" style={{ height: "100%", flexWrap: "nowrap" }}>
+      <Row
+        className="g-0 flex-grow-1"
+        style={{ height: "100%", flexWrap: "nowrap" }}
+      >
         {/* Sidebar */}
         <Col
           md={4}
@@ -290,7 +305,11 @@ const CaretakerChat = () => {
         >
           <div style={{ padding: 16 }}>
             {isMobile && activeUser && (
-              <Button variant="light" className="mb-3" onClick={() => setShowSidebar(false)}>
+              <Button
+                variant="light"
+                className="mb-3"
+                onClick={() => setShowSidebar(false)}
+              >
                 <BsArrowLeft /> Back
               </Button>
             )}
@@ -311,41 +330,48 @@ const CaretakerChat = () => {
             </Form.Group>
 
             <h6 style={{ color: chosenColor }}>Users</h6>
+            <h6 style={{ color: chosenColor }}>Users</h6>
             <ListGroup variant="flush">
-              {filteredUsers.map((u) => (
-                <ListGroup.Item
-                  key={`user-${u._id}`}
-                  action
-                  onClick={() => {
-                    setActiveUser({ ...u, type: "user" });
-                    if (isMobile) setShowSidebar(false);
-                  }}
-                  active={activeUser?._id === u._id}
-                  style={sidebarItemStyle(activeUser?._id === u._id)}
-                  className="d-flex align-items-center"
-                >
-                  <Figure.Image
-                    width={36}
-                    height={36}
-                    src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
-                      u.name || "User"
-                    )}&background=random`}
-                    roundedCircle
-                    className="me-2"
-                  />
-                  <div>
-                    <div>{u.name}</div>
-                    <div
-                      className="small"
-                      style={{
-                        color: isDark ? "rgba(255,255,255,0.6)" : "#6c757d",
-                      }}
-                    >
-                      {u.email}
+              {filteredUsers
+                .filter((u) => u.type === "user")
+                .map((u) => (
+                  <ListGroup.Item
+                    key={`user-${u._id}`}
+                    action
+                    onClick={() => {
+                      setActiveUser({ ...u, type: "user" });
+                      if (isMobile) setShowSidebar(false);
+                    }}
+                    active={
+                      activeUser?._id === u._id && activeUser?.type === "user"
+                    }
+                    style={sidebarItemStyle(
+                      activeUser?._id === u._id && activeUser?.type === "user"
+                    )}
+                    className="d-flex align-items-center"
+                  >
+                    <Figure.Image
+                      width={36}
+                      height={36}
+                      src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
+                        u.name || "User"
+                      )}&background=random`}
+                      roundedCircle
+                      className="me-2"
+                    />
+                    <div>
+                      <div>{u.name}</div>
+                      <div
+                        className="small"
+                        style={{
+                          color: isDark ? "rgba(255,255,255,0.6)" : "#6c757d",
+                        }}
+                      >
+                        {u.email}
+                      </div>
                     </div>
-                  </div>
-                </ListGroup.Item>
-              ))}
+                  </ListGroup.Item>
+                ))}
             </ListGroup>
 
             <h6 style={{ color: chosenColor, marginTop: 16 }}>AI Assistant</h6>
@@ -376,7 +402,9 @@ const CaretakerChat = () => {
                       <div>MindMate AI</div>
                       <div
                         className="small"
-                        style={{ color: isDark ? "rgba(255,255,255,0.6)" : "#6c757d" }}
+                        style={{
+                          color: isDark ? "rgba(255,255,255,0.6)" : "#6c757d",
+                        }}
                       >
                         Virtual assistant
                       </div>
@@ -428,7 +456,10 @@ const CaretakerChat = () => {
                 }}
               />
               <h4 style={{ color: chosenColor }}>MindMate Care</h4>
-              <p>Connect with your users or chat with the AI assistant for insights.</p>
+              <p>
+                Connect with your users or chat with the AI assistant for
+                insights.
+              </p>
             </div>
           ) : (
             <>
@@ -472,30 +503,40 @@ const CaretakerChat = () => {
               </div>
 
               {/* Messages */}
-              <div style={{ flex: 1, overflowY: "auto", padding: 16, width: "100%" }}>
-                {activeUser.type === "ai"
-                  ? aiMessages.map((m, idx) => (
-                      <MessageBubble
-                        key={`ai-${idx}`}
-                        msg={m}
-                        isMe={m.role === "user"}
-                        chosenColor={chosenColor}
-                      />
-                    ))
-                  : isLoadingMessages ? (
-                      <div className="d-flex justify-content-center align-items-center h-100">
-                        <Spinner animation="border" style={{ color: chosenColor }} />
-                      </div>
-                    ) : (
-                      messages.map((m, idx) => (
-                        <MessageBubble
-                          key={m._id || idx}
-                          msg={m}
-                          isMe={String(m.sender) === String(currentCaretakerId)}
-                          chosenColor={chosenColor}
-                        />
-                      ))
-                    )}
+              <div
+                style={{
+                  flex: 1,
+                  overflowY: "auto",
+                  padding: 16,
+                  width: "100%",
+                }}
+              >
+                {activeUser.type === "ai" ? (
+                  aiMessages.map((m, idx) => (
+                    <MessageBubble
+                      key={`ai-${idx}`}
+                      msg={m}
+                      isMe={m.role === "user"}
+                      chosenColor={chosenColor}
+                    />
+                  ))
+                ) : isLoadingMessages ? (
+                  <div className="d-flex justify-content-center align-items-center h-100">
+                    <Spinner
+                      animation="border"
+                      style={{ color: chosenColor }}
+                    />
+                  </div>
+                ) : (
+                  messages.map((m, idx) => (
+                    <MessageBubble
+                      key={m._id || idx}
+                      msg={m}
+                      isMe={String(m.sender) === String(currentCaretakerId)}
+                      chosenColor={chosenColor}
+                    />
+                  ))
+                )}
                 <div ref={chatEndRef} />
               </div>
 
